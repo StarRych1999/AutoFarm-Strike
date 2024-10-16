@@ -1,0 +1,168 @@
+-- Script de Auto-Farm para Anime Strike Simulator com Seleção de Múltiplos Inimigos/Mobs
+
+local player = game.Players.LocalPlayer
+local remote = game:GetService("ReplicatedStorage").RemoteEvent -- Substitua pelo nome correto do RemoteEvent
+local farmAtivo = false
+local inimigosSelecionados = {}
+local inimigoList = {}
+
+-- Função para atacar o inimigo
+function atacarInimigo(inimigo)
+    remote:FireServer(inimigo)
+end
+
+-- Função para listar todos os inimigos/mobs no jogo
+function listarInimigos()
+    inimigoList = {}
+    for _, inimigo in pairs(game.Workspace.Inimigos:GetChildren()) do -- Substitua pelo diretório correto dos inimigos
+        table.insert(inimigoList, inimigo.Name)
+    end
+end
+
+-- Função para encontrar o inimigo mais próximo de um tipo selecionado
+function encontrarInimigosSelecionados()
+    local inimigos = game.Workspace.Inimigos:GetChildren() -- Substitua pelo diretório correto dos inimigos
+    local maisProximo = nil
+    local distanciaMinima = math.huge
+
+    for _, inimigo in pairs(inimigos) do
+        if table.find(inimigosSelecionados, inimigo.Name) then
+            local distancia = (player.Character.HumanoidRootPart.Position - inimigo.Position).magnitude
+            if distancia < distanciaMinima then
+                distanciaMinima = distancia
+                maisProximo = inimigo
+            end
+        end
+    end
+    return maisProximo
+end
+
+-- Função do loop de auto-farm nos inimigos selecionados
+function iniciarAutoFarm()
+    while farmAtivo do
+        if #inimigosSelecionados > 0 then
+            local alvo = encontrarInimigosSelecionados()
+            if alvo then
+                atacarInimigo(alvo)
+            end
+        end
+        wait(0.5)
+    end
+end
+
+-- Criar Interface Gráfica (GUI)
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local ToggleButton = Instance.new("TextButton")
+local HideButton = Instance.new("TextButton")
+local DestroyButton = Instance.new("TextButton")
+local EnemyDropdown = Instance.new("TextButton")
+
+-- Propriedades da GUI
+ScreenGui.Parent = game.CoreGui
+
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MainFrame.Size = UDim2.new(0, 250, 0, 250)  -- Ajuste maior para celular
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -125)
+MainFrame.Active = true
+MainFrame.Draggable = true -- Permite mover o menu no celular
+
+ToggleButton.Parent = MainFrame
+ToggleButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+ToggleButton.Size = UDim2.new(0, 230, 0, 60)
+ToggleButton.Position = UDim2.new(0, 10, 0, 20)
+ToggleButton.Text = "Ativar Auto-Farm"
+ToggleButton.TextScaled = true -- Ajusta o texto para caber no botão
+
+HideButton.Parent = MainFrame
+HideButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+HideButton.Size = UDim2.new(0, 230, 0, 40)
+HideButton.Position = UDim2.new(0, 10, 0, 90)
+HideButton.Text = "Ocultar Menu"
+HideButton.TextScaled = true -- Ajusta o texto para caber no botão
+
+DestroyButton.Parent = MainFrame
+DestroyButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+DestroyButton.Size = UDim2.new(0, 230, 0, 40)
+DestroyButton.Position = UDim2.new(0, 10, 0, 140)
+DestroyButton.Text = "Destruir Menu/Script"
+DestroyButton.TextScaled = true -- Ajusta o texto para caber no botão
+
+EnemyDropdown.Parent = MainFrame
+EnemyDropdown.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+EnemyDropdown.Size = UDim2.new(0, 230, 0, 40)
+EnemyDropdown.Position = UDim2.new(0, 10, 0, 190)
+EnemyDropdown.Text = "Selecionar Inimigos"
+EnemyDropdown.TextScaled = true -- Ajusta o texto para caber no botão
+
+-- Função para alternar o auto-farm
+ToggleButton.MouseButton1Click:Connect(function()
+    farmAtivo = not farmAtivo
+    if farmAtivo then
+        ToggleButton.Text = "Desativar Auto-Farm"
+        iniciarAutoFarm()
+    else
+        ToggleButton.Text = "Ativar Auto-Farm"
+    end
+end)
+
+-- Função para ocultar/mostrar o menu
+HideButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    wait(0.5)
+    
+    -- Botão para mostrar o menu novamente
+    local ShowButton = Instance.new("TextButton")
+    ShowButton.Parent = ScreenGui
+    ShowButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    ShowButton.Size = UDim2.new(0, 100, 0, 50)
+    ShowButton.Position = UDim2.new(0, 10, 0, 10)
+    ShowButton.Text = "Mostrar Menu"
+    ShowButton.TextScaled = true
+
+    ShowButton.MouseButton1Click:Connect(function()
+        MainFrame.Visible = true
+        ShowButton:Destroy() -- Remove o botão de mostrar menu após ser clicado
+    end)
+end)
+
+-- Função para destruir completamente o menu e o script
+DestroyButton.MouseButton1Click:Connect(function()
+    farmAtivo = false -- Para o auto-farm
+    ScreenGui:Destroy() -- Remove toda a interface gráfica
+    script:Destroy() -- Destrói o próprio script
+end)
+
+-- Função para exibir uma lista de inimigos para seleção
+EnemyDropdown.MouseButton1Click:Connect(function()
+    listarInimigos() -- Atualiza a lista de inimigos
+
+    -- Criar menu de seleção de inimigos
+    local SelectionGui = Instance.new("Frame")
+    SelectionGui.Parent = ScreenGui
+    SelectionGui.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    SelectionGui.Size = UDim2.new(0, 250, 0, 300)
+    SelectionGui.Position = UDim2.new(0.5, -125, 0.3, -150)
+
+    -- Adicionar os inimigos à lista de botões com seleção múltipla
+    for _, nomeInimigo in pairs(inimigoList) do
+        local InimigoButton = Instance.new("TextButton")
+        InimigoButton.Parent = SelectionGui
+        InimigoButton.Size = UDim2.new(0, 230, 0, 40)
+        InimigoButton.Position = UDim2.new(0, 10, 0, #SelectionGui:GetChildren() * 50)
+        InimigoButton.Text = nomeInimigo
+        InimigoButton.TextScaled = true
+
+        -- Permitir seleção múltipla
+        InimigoButton.MouseButton1Click:Connect(function()
+            if table.find(inimigosSelecionados, nomeInimigo) then
+                table.remove(inimigosSelecionados, table.find(inimigosSelecionados, nomeInimigo))
+                InimigoButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200) -- Cor original
+            else
+                table.insert(inimigosSelecionados, nomeInimigo)
+                InimigoButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Cor verde para indicar seleção
+            end
+        end)
+    end
+end)
